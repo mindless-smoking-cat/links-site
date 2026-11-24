@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#101017">
+  <title>Links</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./player.js"></script>
+</head>
+<body>
+  <div class="scene-background">
+    <canvas id="scene" width="960" height="540" aria-label="Live Radial Ribbon audio visualizer">This visualizer requires WebGL.</canvas>
+  </div>
+  <main>
+    <h1 class="sr-only">Links</h1>
+    <button id="circle-play" type="button" aria-label="Play music" title="Play music" disabled></button>
+    <nav id="links" aria-label="Personal links">
+      <ul id="links-list">
+        <li><a href="https://github.com/mindless-smoking-cat" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="https://steamcommunity.com/id/nishikianago/" target="_blank" rel="noopener">Steam</a></li>
+        <li><a href="https://anilist.co/user/koharu666" target="_blank" rel="noopener">AniList</a></li>
+        <li><a href="https://enka.network/u/nanashi666/" target="_blank" rel="noopener">Enka.Network</a></li>
+        <li><a href="https://akasha.cv/profile/778034243" target="_blank" rel="noopener">Akasha</a></li>
+        <li><a href="https://www.youtube.com/@kusagi0x539" target="_blank" rel="noopener">YouTube</a></li>
+      </ul>
+    </nav>
+    <div class="overlay">
+      <section id="player" aria-label="Audio player">
+        <button id="player-toggle" type="button" aria-label="Music player" aria-expanded="false" aria-controls="player-panel">
+          <svg aria-hidden="true" viewBox="0 0 16 16"><path d="m3 10 5-5 5 5"/></svg>
+        </button>
+        <div id="player-panel" inert>
+          <div class="panel-body">
+            <div class="media-bar">
+              <button id="play" type="button" disabled><span class="play-icon" aria-hidden="true"></span><span id="play-label" class="sr-only">Play</span></button>
+              <span class="track" id="track" role="status"></span>
+              <div class="timeline" id="timeline" hidden>
+                <span id="elapsed">0:00</span>
+                <input type="range" id="seek" min="0" max="1" step=".01" value="0" aria-label="Playback position" disabled>
+                <span id="duration">0:00</span>
+              </div>
+              <div class="player-options">
+                <label class="volume">
+                  <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 9h4l5-4v14l-5-4H3zM16 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg>
+                  <input type="range" id="volume" min="0" max="100" value="5" aria-label="Playback volume" aria-valuetext="5%" disabled>
+                  <span id="volume-percent" aria-hidden="true">5%</span>
+                </label>
+                <button id="choose" type="button" disabled><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z"/></svg>Choose audio</button>
+                <input type="file" id="audio-file" accept="audio/*,.wav,.mp3,.m4a,.flac,.ogg,.opus,.aac" hidden>
+              </div>
+              <div id="scene-error" role="status" hidden></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</body></html>

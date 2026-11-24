@@ -1,0 +1,143 @@
+:root {
+  color-scheme: dark;
+  font-family: Inter, system-ui, sans-serif;
+  color: #f6f5f6;
+  background: #101017;
+}
+* { box-sizing: border-box }
+body { margin: 0 }
+[hidden] { display: none !important }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+.scene-background { position: fixed; inset: 0; z-index: -1 }
+canvas { display: block; width: 100%; height: 100% }
+main { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; justify-content: flex-end }
+.overlay {
+  position: relative; pointer-events: none;
+  display: grid; grid-template-columns: 1fr minmax(0, 39rem) 1fr; align-items: end; gap: 1rem;
+  padding: 4rem max(3.5vw, 1rem, env(safe-area-inset-left), env(safe-area-inset-right)) env(safe-area-inset-bottom);
+}
+#links {
+  position: absolute; top: max(1rem, env(safe-area-inset-top)); left: max(1rem, env(safe-area-inset-left));
+  width: 7rem; max-height: calc(100dvh - 3rem); overflow-y: auto;
+  padding: .25rem; text-align: center; scrollbar-width: thin;
+}
+#links-list { display: grid; gap: .375rem; list-style: none; margin: 0; padding: 0 }
+#links-list a {
+  display: flex; flex-direction: column; align-items: center; gap: .35rem;
+  padding: .4rem .15rem; border: 1px solid transparent; border-radius: .25rem;
+  color: white; font-size: .875rem; font-weight: 550; line-height: 1.2; text-decoration: none;
+  overflow-wrap: anywhere; text-shadow: 0 1px 2px #101020, 0 0 4px #101020, 0 0 6px #101020;
+}
+#links-list a::before {
+  content: ""; width: 3rem; height: 3rem;
+  background: var(--shortcut-icon, url("./assets/shortcut-web.png")) center / contain no-repeat;
+  filter: drop-shadow(0 2px 1px #17132191);
+}
+#links-list :is([href^="https://github.com/" i], [href^="http://github.com/" i]) {
+  --shortcut-icon: url("./assets/github.svg");
+}
+#links-list :is([href^="https://steamcommunity.com/" i], [href^="http://steamcommunity.com/" i]) {
+  --shortcut-icon: url("./assets/steam.svg");
+}
+#links-list :is([href^="https://anilist.co/" i], [href^="http://anilist.co/" i]) {
+  --shortcut-icon: url("./assets/anilist.svg");
+}
+#links-list :is([href^="https://enka.network/" i], [href^="http://enka.network/" i]) {
+  --shortcut-icon: url("./assets/enka.png");
+}
+#links-list :is([href^="https://akasha.cv/" i], [href^="http://akasha.cv/" i]) {
+  --shortcut-icon: url("./assets/akasha.svg");
+}
+#links-list :is([href^="https://www.youtube.com/" i], [href^="http://www.youtube.com/" i]) {
+  --shortcut-icon: url("./assets/youtube.png");
+}
+#links-list a:is(:hover, :focus-visible, :active) { background: #34365380; border-color: #e5ddff99 }
+button, input { font: inherit }
+button { cursor: pointer; color: inherit }
+button:disabled { cursor: default; opacity: .5 }
+:focus-visible { outline: 2px solid #fff; outline-offset: 2px }
+button svg, .volume svg { width: 1.05rem; height: 1.05rem; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round }
+#circle-play {
+  /* Resting disc in ribbon_bass.ini: 40% of the renderer's inset drawing area. */
+  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(calc(40vw - 16px), calc(40dvh - 14.4px)); aspect-ratio: 1;
+  border-radius: 50%; padding: 0; border: 0; background: transparent;
+}
+#circle-play:disabled { pointer-events: none }
+#player { grid-column: 2; text-align: center; min-width: 0 }
+#player-toggle {
+  display: inline-grid; place-items: center; width: 44px; height: 44px; padding: 0;
+  border: 0; background: transparent; pointer-events: auto;
+}
+#player-toggle svg { width: 1.5rem; height: 1.5rem; filter: drop-shadow(0 1px 2px #08070d) }
+#player-toggle[aria-expanded="true"] svg { transform: rotate(180deg) }
+#player-panel { display: grid; grid-template-rows: 1fr; transition: grid-template-rows .24s ease-out }
+#player-panel[inert] { grid-template-rows: 0fr }
+.panel-body { position: relative; min-height: 0; overflow: hidden }
+@media (prefers-reduced-motion: reduce) {
+  #player-panel { transition: none }
+}
+.media-bar {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center;
+  gap: .375rem .875rem; margin-bottom: .75rem; padding: .625rem .75rem;
+  text-align: left; background: rgb(16 16 20 / 30%); border: 1px solid #39393f; border-radius: .625rem;
+  pointer-events: auto;
+}
+#play, #choose { min-height: 44px; border: 0 }
+#play {
+  grid-area: 1 / 2; justify-self: center; display: grid; place-items: center;
+  width: 44px; padding: 0; border-radius: 50%; background: #f6f5f6; color: #202024;
+}
+#play:enabled:hover { background: #dedde2 }
+.play-icon { width: 0; height: 0; margin-left: 2px; border-block: 7px solid transparent; border-left: 11px solid currentColor }
+.playing .play-icon { width: 11px; height: 14px; margin-left: 0; border: 0; border-inline: 3px solid currentColor }
+.track { grid-area: 1 / 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: .875rem; font-weight: 600 }
+.track.error { white-space: normal; overflow-wrap: anywhere }
+.timeline {
+  grid-column: 1 / -1; justify-self: center; width: min(100%, 25rem);
+  display: grid; grid-template-columns: 6ch minmax(0, 1fr) 6ch; align-items: center; gap: .5rem;
+  color: #d4d3dc; font-size: .75rem; font-variant-numeric: tabular-nums;
+}
+#elapsed { text-align: right }
+#seek {
+  --seek-track: linear-gradient(to right, #70d49e var(--pos, 0%), #52525b var(--pos, 0%));
+  width: 100%; height: 1.5rem; margin: 0;
+  appearance: none; background: transparent; cursor: pointer;
+}
+#seek::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: var(--seek-track) }
+#seek::-moz-range-track { height: 6px; border-radius: 3px; background: var(--seek-track) }
+#seek::-webkit-slider-thumb { appearance: none; width: 10px; height: 6px; background: transparent }
+#seek::-moz-range-thumb { width: 10px; height: 6px; border: 0; background: transparent }
+@media (forced-colors: active) {
+  #seek {
+    --seek-track: linear-gradient(to right, Highlight var(--pos, 0%), GrayText var(--pos, 0%));
+    forced-color-adjust: none;
+  }
+  #seek:focus-visible { outline-color: Highlight }
+}
+.player-options { grid-area: 1 / 3; justify-self: end; display: flex; align-items: center; gap: .5rem }
+.volume { display: flex; align-items: center; gap: .375rem; color: #bfbfc6 }
+#volume { width: 3.5rem; height: 2.75rem; margin: 0; accent-color: #eee; cursor: pointer }
+#volume-percent { min-width: 4ch; font-size: .75rem; font-variant-numeric: tabular-nums; text-align: right }
+#choose { display: flex; align-items: center; gap: .375rem; padding: .375rem .5rem; border-radius: .375rem; background: transparent; color: #d7d7dc; font-size: .8125rem; white-space: nowrap }
+#choose:enabled:hover { background: #343439; color: #fff }
+#scene-error { grid-column: 1 / -1; font-size: .875rem; overflow-wrap: anywhere }
+@media (max-width: 52rem) {
+  .overlay { grid-template-columns: minmax(0, 1fr); justify-items: center; gap: .35rem; padding-top: 3rem }
+  #links { display: flex; align-items: flex-start; width: auto; max-width: calc(100% - 2rem); max-height: 30dvh }
+  #links-list { display: flex; flex-wrap: wrap; min-width: 0 }
+  #links-list li { width: 6.25rem; max-width: 100% }
+  #player { grid-column: 1; width: min(39rem, 100%) }
+}
+@media (max-width: 38rem) {
+  .media-bar { grid-template-columns: minmax(0, 1fr) }
+  #play { grid-area: 2 / 1 }
+  .track { text-align: center }
+  .player-options {
+    grid-area: auto / 1; justify-self: stretch; justify-content: space-between;
+    border-top: 1px solid #39393f; padding-top: .25rem;
+  }
+}
