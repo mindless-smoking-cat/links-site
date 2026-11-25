@@ -45,6 +45,23 @@ export function bindDesignMenu(scene, draw) {
   let session = 0, animation = 0, previousFrame = 0;
   let pointer = null, pending = false, cropImage = null, replacement = null;
 
+  function panelLimits({width, height}) {
+    const viewport = document.documentElement;
+    return {right: viewport.clientWidth - width, bottom: viewport.clientHeight - height};
+  }
+  function placePanel(x, y, limits) {
+    const left = Math.max(0, Math.min(x, limits.right));
+    const top = Math.max(0, Math.min(y, limits.bottom));
+    panel.style.inset = `${top}px auto auto ${left}px`;
+  }
+  function keepPanelInView() {
+    if (panel.hidden) return;
+    const bounds = panel.getBoundingClientRect();
+    const limits = panelLimits(bounds);
+    if (pointer?.drag) pointer.drag.limits = limits;
+    if (panel.style.left) placePanel(bounds.left, bounds.top, limits);
+  }
+
   function setStatus(message = '', busy = false) {
     if (available) menu.ccall('menu_status', null, ['string', 'number'], [message, busy]);
   }
@@ -65,8 +82,8 @@ export function bindDesignMenu(scene, draw) {
     session++;
     cancelAnimationFrame(animation);
     endCrop();
-    if (pointer !== null) {
-      if (canvas.hasPointerCapture(pointer)) canvas.releasePointerCapture(pointer);
+    if (pointer) {
+      if (canvas.hasPointerCapture(pointer.id)) canvas.releasePointerCapture(pointer.id);
       pointer = null;
     }
     if (available) {
@@ -152,7 +169,7 @@ export function bindDesignMenu(scene, draw) {
     if (canvas.width !== width) canvas.width = width;
     if (canvas.height !== height) canvas.height = height;
     const flags = menu._menu_frame(w, h, width / w, height / h, dt);
-    canvas.style.cursor = menu._menu_pan_cursor() ? (pointer === null ? 'grab' : 'grabbing') : '';
+    canvas.style.cursor = pointer?.drag || menu._menu_pan_cursor?.() ? (pointer ? 'grabbing' : 'grab') : '';
     handle(flags);
   }
   function animate(now) {
@@ -166,12 +183,17 @@ export function bindDesignMenu(scene, draw) {
   async function open() {
     const current = ++session;
     panel.hidden = false;
+    keepPanelInView();
     toggle.setAttribute('aria-expanded', 'true');
     canvas.focus({preventScroll: true});
     try {
       if (!menu) {
         showStatus('Loading scene design…');
-        loadingMenu ??= import('./design-ui.js').then(({default: createMenu}) => createMenu({canvas}));
+        const version = new URL(import.meta.url).search;
+        loadingMenu ??= import(`./design-ui.js${version}`).then(({default: createMenu}) => createMenu({
+          canvas,
+          locateFile: file => new URL(`${file}${version}`, import.meta.url).href
+        }));
         const instance = await loadingMenu;
         if (current !== session) return;
         menu = instance;
@@ -197,6 +219,7 @@ export function bindDesignMenu(scene, draw) {
   }
 
   toggle.disabled = false;
+  window.addEventListener('resize', keepPanelInView);
   toggle.addEventListener('click', () => panel.hidden ? open() : close());
   byId('player-toggle').addEventListener('click', () => {
     if (!panel.hidden && byId('player-panel').inert) close();
@@ -222,28 +245,50 @@ export function bindDesignMenu(scene, draw) {
     }, 'Opening image…');
   }));
 
-  function move(event) {
+  function moveMenuPointer(event) {
     const rect = canvas.getBoundingClientRect();
     menu._menu_mouse(event.clientX - rect.left, event.clientY - rect.top);
   }
-  canvas.addEventListener('pointermove', event => { if (available && event.isPrimary) move(event); });
+  function movePanel(event, drag) {
+    placePanel(event.clientX - drag.x, event.clientY - drag.y, drag.limits);
+  }
+  canvas.addEventListener('pointermove', event => {
+    if (!available || !event.isPrimary || (pointer && event.pointerId !== pointer.id)) return;
+    if (pointer?.drag) movePanel(event, pointer.drag);
+    else moveMenuPointer(event);
+  });
   canvas.addEventListener('pointerleave', () => {
     if (available && pointer === null) menu._menu_mouse(-10000, -10000);
   });
   canvas.addEventListener('pointerdown', event => {
-    if (!available || !event.isPrimary || event.button !== 0) return;
+    if (!available || pointer || !event.isPrimary || event.button !== 0) return;
     canvas.focus({preventScroll: true});
-    pointer = event.pointerId;
-    canvas.setPointerCapture(pointer);
-    move(event);
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left, y = event.clientY - rect.top;
+    const drag = menu._menu_title_hit?.(x, y) ? {x, y, limits: panelLimits(rect)} : null;
+    pointer = {id: event.pointerId, drag};
+    canvas.setPointerCapture(pointer.id);
+    if (drag) {
+      canvas.style.cursor = 'grabbing';
+      menu._menu_mouse(-10000, -10000);
+      return;
+    }
+    menu._menu_mouse(x, y);
     menu._menu_button(true);
     render(performance.now());
   });
   function release(event) {
-    if (!available || event.pointerId !== pointer) return;
+    if (event.pointerId !== pointer?.id) return;
+    const {drag} = pointer;
     pointer = null;
-    if (event.type === 'pointerup') move(event);
-    else menu._menu_mouse(-10000, -10000);
+    if (!available) return;
+    if (event.type === 'pointerup') {
+      if (drag) movePanel(event, drag);
+      moveMenuPointer(event);
+    } else {
+      menu._menu_mouse(-10000, -10000);
+    }
+    if (drag) return;
     menu._menu_button(false);
     // Keep ImGui file buttons inside the browser's user activation.
     render(performance.now());
