@@ -1,6 +1,6 @@
 import { AudioAnalysis, preparePlaybackBuffer } from './analysis.js';
-import { loadVisualizer } from './visualizer.js';
-import { bindDesignMenu } from './design.js?v=2';
+import { loadVisualizer } from './visualizer.js?v=3';
+import { bindDesignMenu } from './design.js?v=3';
 
 const byId = id => document.getElementById(id);
 const canvas = byId('scene');

@@ -1,5 +1,15 @@
 import { createSceneRenderer } from './draw.js';
 
+async function rendererModule(name, options) {
+  // Keep the renderer glue and its Wasm on the same release as this loader.
+  const version = new URL(import.meta.url).search;
+  const {default: createModule} = await import(`./${name}.js${version}`);
+  return createModule({
+    ...options,
+    locateFile: file => new URL(file + version, import.meta.url).href
+  });
+}
+
 function loadSettings(module, bytes) {
   const address = module._scene_buffer(bytes.length);
   if (!address) throw new Error('Invalid scene size.');
@@ -14,10 +24,9 @@ async function artwork(name) {
 }
 
 async function stockScene(canvas, bytes) {
-  const [{default: createModule}, background, center] = await Promise.all([
-    import('./scene.js'), artwork('background.webp'), artwork('center.webp')
+  const [module, background, center] = await Promise.all([
+    rendererModule('scene'), artwork('background.webp'), artwork('center.webp')
   ]);
-  const module = await createModule();
   loadSettings(module, bytes);
   if (!module._scene_load()) throw new Error('The bundled scene could not be opened.');
   return {module, draw: createSceneRenderer(canvas, module, background, center), circle: true};
@@ -38,8 +47,7 @@ async function desktopScene(canvas, bytes) {
     return view.getUint32(start, true);
   }
   const size = number(), count = number();
-  const {default: createModule} = await import('./desktop.js');
-  const module = await createModule({canvas});
+  const module = await rendererModule('desktop', {canvas});
   loadSettings(module, take(size));
   for (let i = 0; i < count; i++) module.FS.writeFile('art' + i, take(number()));
   if (offset !== bytes.length) throw new Error('Unexpected trailing scene data.');
@@ -101,7 +109,7 @@ async function desktopScene(canvas, bytes) {
 }
 
 export async function loadVisualizer(canvas) {
-  const response = await fetch(new URL('./assets/site.scene', import.meta.url));
+  const response = await fetch(new URL('./assets/site.scene', import.meta.url), {cache: 'no-cache'});
   if (!response.ok) throw new Error('Could not load the scene.');
   const bytes = new Uint8Array(await response.arrayBuffer());
   const magic = String.fromCharCode(...bytes.subarray(0, 4));
