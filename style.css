@@ -86,7 +86,7 @@ button svg, .volume svg { width: 1.05rem; height: 1.05rem; fill: none; stroke: c
   text-align: left; background: rgb(16 16 20 / 30%); border: 1px solid #39393f; border-radius: .625rem;
   pointer-events: auto;
 }
-#play, #choose { min-height: 44px; border: 0 }
+#play, #choose, #design-toggle { min-height: 44px; border: 0 }
 #play {
   grid-area: 1 / 2; justify-self: center; display: grid; place-items: center;
   width: 44px; padding: 0; border-radius: 50%; background: #f6f5f6; color: #202024;
@@ -118,12 +118,35 @@ button svg, .volume svg { width: 1.05rem; height: 1.05rem; fill: none; stroke: c
   }
   #seek:focus-visible { outline-color: Highlight }
 }
-.player-options { grid-area: 1 / 3; justify-self: end; display: flex; align-items: center; gap: .5rem }
-.volume { display: flex; align-items: center; gap: .375rem; color: #bfbfc6 }
-#volume { width: 3.5rem; height: 2.75rem; margin: 0; accent-color: #eee; cursor: pointer }
+.player-options { grid-area: 1 / 3; justify-self: end; display: flex; align-items: center; gap: .375rem }
+.volume { display: flex; align-items: center; gap: .25rem; color: #bfbfc6 }
+#volume { width: 3rem; height: 2.75rem; margin: 0; accent-color: #eee; cursor: pointer }
 #volume-percent { min-width: 4ch; font-size: .75rem; font-variant-numeric: tabular-nums; text-align: right }
 #choose { display: flex; align-items: center; gap: .375rem; padding: .375rem .5rem; border-radius: .375rem; background: transparent; color: #d7d7dc; font-size: .8125rem; white-space: nowrap }
+#design-toggle {
+  display: grid; place-items: center; width: 44px; padding: 0;
+  border-radius: .375rem; background: transparent; color: #d7d7dc;
+}
+#design-toggle svg { width: 1.25rem; height: 1.25rem }
 #choose:enabled:hover { background: #343439; color: #fff }
+#design-toggle:enabled:hover, #design-toggle[aria-expanded="true"] {
+  background: rgb(255 255 255 / 10%); color: #fff;
+}
+#design-panel {
+  --design-bottom: min(7.5rem, 28dvh);
+  position: fixed; z-index: 1;
+  right: max(.75rem, env(safe-area-inset-right));
+  bottom: max(var(--design-bottom), env(safe-area-inset-bottom));
+  width: min(22rem, calc(100vw - 1.5rem));
+  height: min(24rem, calc(100dvh - var(--design-bottom) - max(.75rem, env(safe-area-inset-top))));
+  border-radius: .625rem; box-shadow: 0 12px 32px #08061066; pointer-events: auto;
+}
+#design-canvas { border-radius: inherit; touch-action: none }
+#design-status {
+  position: absolute; inset: 0; padding: 1rem;
+  background: #171520; border: 1px solid #4a425e; border-radius: inherit;
+  text-align: left; font-size: .875rem;
+}
 #scene-error { grid-column: 1 / -1; font-size: .875rem; overflow-wrap: anywhere }
 @media (max-width: 52rem) {
   .overlay { grid-template-columns: minmax(0, 1fr); justify-items: center; gap: .35rem; padding-top: 3rem }
@@ -132,12 +155,13 @@ button svg, .volume svg { width: 1.05rem; height: 1.05rem; fill: none; stroke: c
   #links-list li { width: 6.25rem; max-width: 100% }
   #player { grid-column: 1; width: min(39rem, 100%) }
 }
-@media (max-width: 38rem) {
+@media (max-width: 42rem) {
+  #design-panel { --design-bottom: min(10rem, 29dvh) }
   .media-bar { grid-template-columns: minmax(0, 1fr) }
   #play { grid-area: 2 / 1 }
   .track { text-align: center }
   .player-options {
     grid-area: auto / 1; justify-self: stretch; justify-content: space-between;
-    border-top: 1px solid #39393f; padding-top: .25rem;
+    gap: .25rem; border-top: 1px solid #39393f; padding-top: .25rem;
   }
 }

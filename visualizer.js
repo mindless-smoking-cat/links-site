@@ -54,7 +54,37 @@ async function desktopScene(canvas, bytes) {
     open();
     available = true;
   });
+  const artworkPaths = ['', ''];
+  let artworkVersion = 0;
   const draw = {
+    circleArtwork() {
+      if (!available) throw new Error('The scene is restoring its graphics. Try again.');
+      const address = module._desktop_crop_preview();
+      if (!address) throw new Error(module.ccall('desktop_error', 'string', [], []) || 'Could not open the circle image.');
+      try {
+        const width = module._desktop_crop_width(), height = module._desktop_crop_height();
+        const pixels = new Uint8ClampedArray(module.HEAPU8.subarray(address, address + width * height * 4));
+        return new ImageData(pixels, width, height);
+      } finally {
+        module._desktop_crop_release();
+      }
+    },
+    async setArtwork(slot, image) {
+      const path = image ? '/web-artwork-' + ++artworkVersion + '.png' : '';
+      if (path) {
+        const blob = await new Promise(resolve => image.toBlob(resolve, 'image/png'));
+        if (!blob) throw new Error('Could not prepare the image.');
+        module.FS.writeFile(path, new Uint8Array(await blob.arrayBuffer()));
+      }
+      if (!available || !module.ccall('desktop_artwork', 'number', ['number', 'string'], [slot, path])) {
+        if (path) module.FS.unlink(path);
+        throw new Error(available
+          ? module.ccall('desktop_error', 'string', [], [])
+          : 'The scene is restoring its graphics. Try again.');
+      }
+      if (artworkPaths[slot]) module.FS.unlink(artworkPaths[slot]);
+      artworkPaths[slot] = path;
+    },
     reset() { module._scene_reset(); },
     frame(seconds, dt, playing) {
       if (!available) return;

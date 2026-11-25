@@ -31,6 +31,12 @@
         <button id="player-toggle" type="button" aria-label="Music player" aria-expanded="false" aria-controls="player-panel">
           <svg aria-hidden="true" viewBox="0 0 16 16"><path d="m3 10 5-5 5 5"/></svg>
         </button>
+        <section id="design-panel" role="dialog" aria-label="Scene design" hidden>
+          <canvas id="design-canvas" tabindex="0" aria-label="Scene design controls"></canvas>
+          <div id="design-status" role="status" hidden></div>
+          <input type="file" id="background-file" accept="image/*" hidden>
+          <input type="file" id="circle-file" accept="image/*" hidden>
+        </section>
         <div id="player-panel" inert>
           <div class="panel-body">
             <div class="media-bar">
@@ -48,6 +54,7 @@
                   <span id="volume-percent" aria-hidden="true">5%</span>
                 </label>
                 <button id="choose" type="button" disabled><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z"/></svg>Choose audio</button>
+                <button id="design-toggle" type="button" aria-label="Scene design" title="Scene design" aria-controls="design-panel" aria-expanded="false" disabled><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18h1.5a2 2 0 0 0 1.5-3.3 1.5 1.5 0 0 1 1.1-2.5H18a3 3 0 0 0 3-3A9 9 0 0 0 12 3Z"/><circle cx="7.5" cy="11" r=".7"/><circle cx="10.4" cy="7.6" r=".7"/><circle cx="14.7" cy="7.5" r=".7"/><circle cx="17.7" cy="10.8" r=".7"/></svg></button>
                 <input type="file" id="audio-file" accept="audio/*,.wav,.mp3,.m4a,.flac,.ogg,.opus,.aac" hidden>
               </div>
               <div id="scene-error" role="status" hidden></div>

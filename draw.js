@@ -29,6 +29,24 @@ function compile(gl, type, source) {
   return shader;
 }
 
+function textureFor(gl, image, mipmaps) {
+  const texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  if (image) {
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    // WebGL 2 provides trilinear filtering for non-power-of-two artwork.
+    if (mipmaps) {
+      gl.generateMipmap(gl.TEXTURE_2D);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    }
+  }
+  return texture;
+}
+
 function prepare(gl, module, images, mipmaps) {
   const program = gl.createProgram();
   for (const [type, source] of [[gl.VERTEX_SHADER, vertexSource], [gl.FRAGMENT_SHADER, fragmentSource]]) {
@@ -48,28 +66,11 @@ function prepare(gl, module, images, mipmaps) {
   const attributes = ['position', 'uv', 'color'].map(name => gl.getAttribLocation(program, name));
   for (const attribute of attributes) gl.enableVertexAttribArray(attribute);
 
-  const textures = [null, ...images].map(image => {
-    const texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    if (image) {
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-      // WebGL 2 supports the original desktop trilinear filtering on these
-      // non-power-of-two textures. WebGL 1 uses bilinear filtering.
-      if (mipmaps) {
-        gl.generateMipmap(gl.TEXTURE_2D);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-      }
-    } else {
-      const start = module._scene_atlas();
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 64, 64, 0, gl.RGBA, gl.UNSIGNED_BYTE,
-        module.HEAPU8.subarray(start, start + 64 * 64 * 4));
-    }
-    return texture;
-  });
+  const atlas = textureFor(gl);
+  const start = module._scene_atlas();
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 64, 64, 0, gl.RGBA, gl.UNSIGNED_BYTE,
+    module.HEAPU8.subarray(start, start + 64 * 64 * 4));
+  const textures = [atlas, ...images.map(image => image ? textureFor(gl, image, mipmaps) : null)];
   return { textures, attributes, viewport: gl.getUniformLocation(program, 'viewport') };
 }
 
@@ -82,9 +83,26 @@ export function createSceneRenderer(canvas, module, background, center) {
   let gpu = prepare(gl, module, images, Boolean(webgl2));
   canvas.addEventListener('webglcontextlost', event => event.preventDefault());
   canvas.addEventListener('webglcontextrestored', () => { gpu = prepare(gl, module, images, Boolean(webgl2)); });
-  module._scene_image_sizes(background.naturalWidth, background.naturalHeight, center.naturalWidth, center.naturalHeight);
+  function updateImageSizes() {
+    module._scene_image_sizes(...images.flatMap(image => image
+      ? [image.naturalWidth ?? image.width, image.naturalHeight ?? image.height] : [0, 0]));
+  }
+  updateImageSizes();
 
   return {
+    circleArtwork() { return images[1]; },
+    setArtwork(slot, image) {
+      if (gl.isContextLost()) throw new Error('The scene is restoring its graphics. Try again.');
+      const texture = image ? textureFor(gl, image, Boolean(webgl2)) : null;
+      if (image && (!texture || gl.getError() !== gl.NO_ERROR)) {
+        gl.deleteTexture(texture);
+        throw new Error('Could not upload the image to the scene.');
+      }
+      gl.deleteTexture(gpu.textures[slot + 1]);
+      gpu.textures[slot + 1] = texture;
+      images[slot] = image;
+      updateImageSizes();
+    },
     reset() { module._scene_reset(); },
     frame(seconds, deltaSeconds, playing = true) {
       if (gl.isContextLost()) return;

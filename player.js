@@ -1,5 +1,6 @@
 import { AudioAnalysis, preparePlaybackBuffer } from './analysis.js';
 import { loadVisualizer } from './visualizer.js';
+import { bindDesignMenu } from './design.js';
 
 const byId = id => document.getElementById(id);
 const canvas = byId('scene');
@@ -32,6 +33,7 @@ function clock(seconds) {
 
 async function initialize() {
   const {module, draw, circle} = await loadVisualizer(canvas);
+  bindDesignMenu(module, draw);
   circlePlay.hidden = !circle;
   if (!circle) canvas.setAttribute('aria-label', 'Live audio visualizer');
   const analysis = new AudioAnalysis(module);
