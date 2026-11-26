@@ -42,6 +42,9 @@ main { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: col
 #links-list :is([href^="https://steamcommunity.com/" i], [href^="http://steamcommunity.com/" i]) {
   --shortcut-icon: url("./assets/steam.svg");
 }
+#links-list :is([href^="https://discord.com/users/" i], [href^="http://discord.com/users/" i]) {
+  --shortcut-icon: url("./assets/discord.svg");
+}
 #links-list :is([href^="https://anilist.co/" i], [href^="http://anilist.co/" i]) {
   --shortcut-icon: url("./assets/anilist.svg");
 }
