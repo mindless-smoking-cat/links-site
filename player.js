@@ -320,6 +320,8 @@ async function initialize() {
     const loading = buffer ? undefined : loadTrack();
     const version = ++transportVersion;
     try {
+      // Treat songs as media on iOS and iPadOS so Silent Mode doesn't mute them.
+      if (navigator.audioSession) navigator.audioSession.type = 'playback';
       await Promise.all([audioContext().resume(), loading]);
       if (transportVersion === version && buffer) startSource();
     } catch (error) {
